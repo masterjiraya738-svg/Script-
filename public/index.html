@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Script Manager Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Fira Code', monospace;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            background: #000;
+            overflow-x: hidden;
+        }
+
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Sound Control Floating Button */
+        .sound-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1.5px solid #00ff66;
+            color: #00ff66;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+
+        .sound-btn:hover {
+            background: #00ff66;
+            color: #000;
+            box-shadow: 0 0 20px #00ff66;
+        }
+
+        .terminal-window {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 480px;
+            background: rgba(0, 10, 5, 0.25);
+            border: 1.5px solid #00ff66;
+            box-shadow: 0 0 25px rgba(0, 255, 102, 0.6), inset 0 0 15px rgba(0, 255, 102, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        
+        .editor-mode {
+            max-width: 800px !important;
+        }
+
+        .terminal-header {
+            background: rgba(0, 20, 10, 0.4);
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1.5px solid #00ff66;
+        }
+
+        .terminal-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .dot-red { background: #ff5f56; box-shadow: 0 0 8px #ff5f56; }
+        .dot-yellow { background: #ffbd2e; box-shadow: 0 0 8px #ffbd2e; }
+        .dot-green { background: #27c93f; box-shadow: 0 0 8px #27c93f; }
+
+        .terminal-title {
+            color: #00ff66;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px #00ff66, 0 0 20px #00ff66;
+        }
+
+        .terminal-body {
+            padding: 25px;
+        }
+
+        h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #00ff66;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-shadow: 0 0 10px #00ff66, 0 0 20px #00ff66;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: #00ff66;
+            letter-spacing: 1px;
+            text-shadow: 0 0 8px #00ff66;
+        }
+
+        input, textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1.5px solid #00ff66;
+            color: #00ff66;
+            padding: 12px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.25s ease;
+            box-shadow: inset 0 0 10px rgba(0, 255, 102, 0.2);
+            text-shadow: 0 0 5px #00ff66;
+        }
+
+        input:focus, textarea:focus {
+            border-color: #00ff66;
+            box-shadow: 0 0 20px rgba(0, 255, 102, 0.8);
+            background: rgba(0, 20, 10, 0.5);
+        }
+
+        textarea {
+            height: 250px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        button {
+            width: 100%;
+            background: rgba(0, 255, 102, 0.15);
+            border: 1.5px solid #00ff66;
+            color: #00ff66;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: all 0.25s ease;
+            box-shadow: 0 0 15px rgba(0, 255, 102, 0.4);
+            text-shadow: 0 0 8px #00ff66;
+        }
+
+        button:hover {
+            background: #00ff66;
+            color: #000;
+            box-shadow: 0 0 30px #00ff66;
+            text-shadow: none;
+        }
+
+        .hidden { display: none !important; }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-top: 15px;
+            color: #00ff66;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-shadow: 0 0 10px #00ff66;
+        }
+
+        .nav-link:hover {
+            text-shadow: 0 0 20px #00ff66;
+        }
+
+        .btn-logout {
+            width: auto;
+            background: rgba(255, 50, 50, 0.25);
+            border-color: #ff4444;
+            color: #ff6666;
+            padding: 6px 14px;
+            font-size: 11px;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+            text-shadow: 0 0 8px #ff4444;
+        }
+
+        .btn-logout:hover {
+            background: #ff4444;
+            color: #fff;
+            box-shadow: 0 0 20px #ff4444;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- সাউন্ড কন্ট্রোল বাটন -->
+    <button class="sound-btn" id="soundToggle" onclick="toggleSound()">🔇 Sound: OFF</button>
+
+    <video autoplay loop muted playsinline id="bg-video">
+        <source src="https://files.catbox.moe/qjz0ac.mp4" type="video/mp4">
+    </video>
+
+    <div class="terminal-window" id="terminal-box">
+        <div class="terminal-header">
+            <div class="terminal-buttons">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+            </div>
+            <div class="terminal-title">TERMINAL // SCRIPT_MANAGER_PRO</div>
+        </div>
+
+        <div class="terminal-body">
+            <div id="login-box">
+                <h2>&gt; ADMIN AUTHENTICATION</h2>
+                <div class="input-group">
+                    <label>[USER_IDENTIFIER]</label>
+                    <input type="text" id="username" placeholder="Enter username...">
+                </div>
+                <div class="input-group">
+                    <label>[ACCESS_KEY]</label>
+                    <input type="password" id="password" placeholder="Enter password...">
+                </div>
+                <button onclick="login()">Execute Access Token</button>
+            </div>
+
+            <div id="editor-box" class="hidden">
+                <div class="flex-between">
+                    <h2>&gt; SCRIPT EDITOR</h2>
+                    <button class="btn-logout" onclick="logout()">Logout</button>
+                </div>
+                <div class="input-group">
+                    <label>[SCRIPT_NAME]</label>
+                    <input type="text" id="filename" placeholder="e.g., bot_command.js">
+                </div>
+                <div class="input-group">
+                    <label>[SOURCE_CODE]</label>
+                    <textarea id="content" placeholder="// Paste or write JavaScript code here..."></textarea>
+                </div>
+                <button onclick="saveScript()">Commit & Save Script</button>
+                
+                <div>
+                    <a href="/scripts.html" class="nav-link">📂 [OPEN_PUBLIC_SCRIPTS_DIRECTORY]</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('bg-video');
+        const soundBtn = document.getElementById('soundToggle');
+
+        // সাউন্ড অন/অফ করার ফাংশন
+        function toggleSound() {
+            if (video.muted) {
+                video.muted = false;
+                soundBtn.innerHTML = "🔊 Sound: ON";
+            } else {
+                video.muted = true;
+                soundBtn.innerHTML = "🔇 Sound: OFF";
+            }
+        }
+
+        // ব্রাউজারে প্রথম যেকোনো টাচ বা ক্লিক করলেই অটোমেটিক সাউন্ড অন হওয়ার জন্য
+        document.body.addEventListener('click', function() {
+            if (video.muted) {
+                video.muted = false;
+                soundBtn.innerHTML = "🔊 Sound: ON";
+            }
+        }, { once: true });
+
+        const terminalBox = document.getElementById('terminal-box');
+
+        if (localStorage.getItem('admin_token')) {
+            document.getElementById('login-box').classList.add('hidden');
+            document.getElementById('editor-box').classList.remove('hidden');
+            terminalBox.classList.add('editor-mode');
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                localStorage.setItem('admin_token', data.token);
+                location.reload();
+            } else {
+                alert("ACCESS DENIED: " + data.message);
+            }
+        }
+
+        async function saveScript() {
+            const filename = document.getElementById('filename').value;
+            const content = document.getElementById('content').value;
+            const token = localStorage.getItem('admin_token');
+
+            const res = await fetch('/api/scripts/save', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ filename, content })
+            });
+            const data = await res.json();
+            alert(data.message);
+            if(data.success) {
+                document.getElementById('filename').value = '';
+                document.getElementById('content').value = '';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('admin_token');
+            location.reload();
+        }
+    </script>
+</body>
+</html>
